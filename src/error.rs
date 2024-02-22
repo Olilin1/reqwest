@@ -417,6 +417,11 @@ async fn test_fmt_decode_error_msg(){
     assert!(err.to_string().contains("error decoding response body"));
 }
 
+/*
+    We have the requirement that a TimeOut when formatted should be the string:
+    "operation timed out". This test checks that is what happens.
+    This test covers one previously untested funciton ; fmt::Display for TimedOut
+ */
 #[tokio::test]
 async fn test_fmt_timed_out_display(){
     let timeout = TimedOut;

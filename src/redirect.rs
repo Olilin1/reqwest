@@ -335,3 +335,15 @@ fn test_remove_sensitive_headers() {
     remove_sensitive_headers(&mut headers, &next, &prev);
     assert_eq!(headers, filtered_headers);
 }
+
+/*
+    We have the requirement that a TooManyRedirects struct when formatted should be the string:
+    "too many redirects". This test checks that is what happens.
+    This test covers one previously untested funciton ; fmt::Display for TooManyRedirects
+ */
+#[tokio::test]
+async fn test_fmt_timed_out_display(){
+    let timeout = TooManyRedirects;
+
+    assert!(timeout.to_string().contains("too many redirects"));
+}
