@@ -390,3 +390,29 @@ mod tests {
         assert!(nested.is_timeout());
     }
 }
+
+
+/*
+    We have the requirement that a redirect error when formatted should be the string:
+    "error following redirect". This test checks that is what happens.
+    This test covers one previously untested branch in the Error::fmt function.
+ */
+#[tokio::test]
+async fn test_fmt_redirect_error_msg(){
+    let err = Error::new(Kind::Redirect, None::<Error>);
+
+    assert!(err.to_string().contains("error following redirect"));
+}
+
+
+/*
+    We have the requirement that a decode error when formatted should be the string:
+    "error decoding response body". This test checks that is what happens.
+    This test covers one previously untested branch in the Error::fmt function.
+ */
+#[tokio::test]
+async fn test_fmt_decode_error_msg(){
+    let err = Error::new(Kind::Decode, None::<Error>);
+
+    assert!(err.to_string().contains("error decoding response body"));
+}
