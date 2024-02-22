@@ -412,4 +412,24 @@ mod tests {
         let nested = super::request(io);
         assert!(nested.is_timeout());
     }
+
+    #[test]
+    fn fmt_status_code_client_error() {
+        let url = Url::parse("https://hyper.rs/prox").unwrap();
+        let status = StatusCode::from_u16(400).unwrap();
+        let err = status_code(url, status); 
+
+        let assert = err.to_string().contains("HTTP status client error");
+        assert!(assert);
+    }
+
+    #[test]
+    fn fmt_status_code_server_error() {
+        let url = Url::parse("https://hyper.rs/prox").unwrap();
+        let status = StatusCode::from_u16(500).unwrap();
+        let err = status_code(url, status); 
+
+        let assert = err.to_string().contains("HTTP status server error");
+        assert!(assert);
+    }
 }
