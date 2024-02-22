@@ -389,4 +389,18 @@ mod tests {
         let nested = super::request(io);
         assert!(nested.is_timeout());
     }
+
+    #[test]
+    fn test_fmt_request_error_msg() {
+        let err = Error::new(Kind::Request, None::<Error>);
+
+        assert!(err.to_string().contains("error sending request"));
+    }
+
+    #[test]
+    fn test_fmt_body_error_msg() {
+        let err = Error::new(Kind::Body, None::<Error>);
+
+        assert!(err.to_string().contains("request or response body error"));
+    }
 }
