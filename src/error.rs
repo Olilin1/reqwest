@@ -389,4 +389,12 @@ mod tests {
         let nested = super::request(io);
         assert!(nested.is_timeout());
     }
+
+    /// Ensured that the error Kind Upgrade contains its expected error string
+    #[test]
+    fn test_fmt_upgrade_error_msg() {
+        let err = Error::new(Kind::Upgrade, None::<Error>);
+
+        assert!(err.to_string().contains("error upgrading connection"));
+    }
 }
