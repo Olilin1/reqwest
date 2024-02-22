@@ -173,7 +173,7 @@ impl Connector {
         self.verbose.0 = enabled;
     }
 
-    #[cfg(feature = "socks")]
+    //#[cfg(feature = "socks")]
     async fn connect_socks(&self, dst: Uri, proxy: ProxyScheme) -> Result<Conn, BoxError> {
         let dns = match proxy {
             ProxyScheme::Socks5 {
@@ -322,7 +322,7 @@ impl Connector {
         let (proxy_dst, _auth) = match proxy_scheme {
             ProxyScheme::Http { host, auth } => (into_uri(Scheme::HTTP, host), auth),
             ProxyScheme::Https { host, auth } => (into_uri(Scheme::HTTPS, host), auth),
-            #[cfg(feature = "socks")]
+            //#[cfg(feature = "socks")]
             ProxyScheme::Socks5 { .. } => return self.connect_socks(dst, proxy_scheme).await,
         };
 

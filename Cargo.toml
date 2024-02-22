@@ -253,3 +253,8 @@ required-features = ["deflate"]
 name = "multipart"
 path = "tests/multipart.rs"
 required-features = ["multipart"]
+
+[[test]]
+name = "proxy"
+path = "tests/proxy.rs"
+required-features = ["socks"]
