@@ -416,3 +416,11 @@ async fn test_fmt_decode_error_msg(){
 
     assert!(err.to_string().contains("error decoding response body"));
 }
+
+#[tokio::test]
+async fn test_fmt_timed_out_display(){
+    let timeout = TimedOut;
+
+    assert!(timeout.to_string().contains("operation timed out"));
+}
+
