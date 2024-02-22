@@ -221,3 +221,49 @@ async fn http_over_http() {
     assert_eq!(res.url().as_str(), url);
     assert_eq!(res.status(), reqwest::StatusCode::OK);
 }
+
+
+
+
+#[tokio::test]
+async fn socks_proxy_should_fail() {
+    
+    let url = "http://hyper.rs/prox";
+
+    let proxy = String::from("Socks5://localhost");
+
+    let res = reqwest::Client::builder()
+        .proxy(reqwest::Proxy::https(&proxy).unwrap())
+        .build()
+        .unwrap()
+        .get(url)
+        .send()
+        .await;
+
+    assert_eq!(res.is_err(), true);
+}
+
+
+#[tokio::test]
+async fn socks_proxy_should_fail2() {
+    let url = "http://hyper.rs/prox";
+    let server = server::http(move |req| {
+        assert_eq!(req.method(), "GET");
+        assert_eq!(req.uri(), url);
+        assert_eq!(req.headers()["host"], "hyper.rs");
+
+        async { http::Response::default() }
+    });
+
+    let proxy = format!("Socks5://{}", server.addr());
+
+    let res = reqwest::Client::builder()
+        .proxy(reqwest::Proxy::http(&proxy).unwrap())
+        .build()
+        .unwrap()
+        .get(url)
+        .send()
+        .await;
+
+    assert_eq!(res.is_err(), true);
+}
