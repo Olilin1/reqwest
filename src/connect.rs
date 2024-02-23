@@ -174,8 +174,8 @@ impl Connector {
     }
 
     #[cfg(feature = "socks")]
-    async fn connect_socks(&self, dst: Uri, proxy: ProxyScheme) -> Result<Conn, BoxError> {
-        let dns = match proxy {
+    fn get_dns(proxy: ProxyScheme) -> socks::DnsResolve {
+        match proxy {
             ProxyScheme::Socks5 {
                 remote_dns: false, ..
             } => socks::DnsResolve::Local,
@@ -185,43 +185,68 @@ impl Connector {
             ProxyScheme::Http { .. } | ProxyScheme::Https { .. } => {
                 unreachable!("connect_socks is only called for socks proxies");
             }
-        };
+        }
+    }
+
+    #[cfg(feature = "socks")]
+    async fn handle_default_tls(
+        &self,
+        dst: Uri,
+        proxy: ProxyScheme,
+        dns: socks::DnsResolve,
+    ) -> Result<Conn, BoxError> {
+        if dst.scheme() == Some(&Scheme::HTTPS) {
+            let host = dst.host().ok_or("no host in url")?.to_string();
+            let conn = socks::connect(proxy, dst, dns).await?;
+            let tls_connector = tokio_native_tls::TlsConnector::from(tls.clone());
+            let io = tls_connector.connect(&host, conn).await?;
+            return Ok(Conn {
+                inner: self.verbose.wrap(NativeTlsConn { inner: io }),
+                is_proxy: false,
+                tls_info: self.tls_info,
+            });
+        }
+    }
+
+    #[cfg(feature = "socks")]
+    async fn handle_rustls_tls(
+        &self,
+        dst: Uri,
+        proxy: ProxyScheme,
+        dns: socks::DnsResolve,
+    ) -> Result<Conn, BoxError> {
+        if dst.scheme() == Some(&Scheme::HTTPS) {
+            use std::convert::TryFrom;
+            use tokio_rustls::TlsConnector as RustlsConnector;
+
+            let tls = tls_proxy.clone();
+            let host = dst.host().ok_or("no host in url")?.to_string();
+            let conn = socks::connect(proxy, dst, dns).await?;
+            let server_name =
+                rustls::ServerName::try_from(host.as_str()).map_err(|_| "Invalid Server Name")?;
+            let io = RustlsConnector::from(tls)
+                .connect(server_name, conn)
+                .await?;
+            return Ok(Conn {
+                inner: self.verbose.wrap(RustlsTlsConn { inner: io }),
+                is_proxy: false,
+                tls_info: false,
+            });
+        }
+    }
+
+    #[cfg(feature = "socks")]
+    async fn connect_socks(&self, dst: Uri, proxy: ProxyScheme) -> Result<Conn, BoxError> {
+        let dns = get_dns(proxy);
 
         match &self.inner {
             #[cfg(feature = "default-tls")]
             Inner::DefaultTls(_http, tls) => {
-                if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().ok_or("no host in url")?.to_string();
-                    let conn = socks::connect(proxy, dst, dns).await?;
-                    let tls_connector = tokio_native_tls::TlsConnector::from(tls.clone());
-                    let io = tls_connector.connect(&host, conn).await?;
-                    return Ok(Conn {
-                        inner: self.verbose.wrap(NativeTlsConn { inner: io }),
-                        is_proxy: false,
-                        tls_info: self.tls_info,
-                    });
-                }
+                return handle_default_tls(self, dst, proxy, dns).await;
             }
             #[cfg(feature = "__rustls")]
             Inner::RustlsTls { tls_proxy, .. } => {
-                if dst.scheme() == Some(&Scheme::HTTPS) {
-                    use std::convert::TryFrom;
-                    use tokio_rustls::TlsConnector as RustlsConnector;
-
-                    let tls = tls_proxy.clone();
-                    let host = dst.host().ok_or("no host in url")?.to_string();
-                    let conn = socks::connect(proxy, dst, dns).await?;
-                    let server_name = rustls::ServerName::try_from(host.as_str())
-                        .map_err(|_| "Invalid Server Name")?;
-                    let io = RustlsConnector::from(tls)
-                        .connect(server_name, conn)
-                        .await?;
-                    return Ok(Conn {
-                        inner: self.verbose.wrap(RustlsTlsConn { inner: io }),
-                        is_proxy: false,
-                        tls_info: false,
-                    });
-                }
+                return handle_rustls_tls(self, dst, proxy, dns).await;
             }
             #[cfg(not(feature = "__tls"))]
             Inner::Http(_) => (),
@@ -1160,6 +1185,27 @@ mod verbose {
                 left -= n;
             }
             Ok(())
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::Escape;
+        use std::fmt::Write;
+
+        #[test]
+        fn escape_tab() {
+            let mut s = String::new();
+            write!(&mut s, "{:?}", Escape(b"hello\tworld")).unwrap();
+            assert_eq!(s, "b\"hello\\tworld\"");
+        }
+
+        #[test]
+        fn escape_backslash() {
+            let mut s = String::new();
+            write!(&mut s, "{:?}", Escape(b"hello\\world")).unwrap();
+            println!("{}", s);
+            assert_eq!(s, "b\"hello\\\\world\"");
         }
     }
 }
