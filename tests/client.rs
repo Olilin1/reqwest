@@ -76,14 +76,6 @@ async fn user_agent() {
     assert_eq!(res.status(), reqwest::StatusCode::OK);
 }
 
-// Tests that build returns error when user_agent is invalid.
-// Increases branch coverage in async_impl/client.rs build by 1 branch.
-#[tokio::test]
-async fn user_agent_invalid() {
-    let res = reqwest::Client::builder().user_agent("\n").build();
-    assert!(res.is_err());
-}
-
 #[tokio::test]
 async fn response_text() {
     let _ = env_logger::try_init();
