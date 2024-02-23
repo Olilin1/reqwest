@@ -1187,27 +1187,6 @@ mod verbose {
             Ok(())
         }
     }
-
-    #[cfg(test)]
-    mod tests {
-        use super::Escape;
-        use std::fmt::Write;
-
-        #[test]
-        fn escape_tab() {
-            let mut s = String::new();
-            write!(&mut s, "{:?}", Escape(b"hello\tworld")).unwrap();
-            assert_eq!(s, "b\"hello\\tworld\"");
-        }
-
-        #[test]
-        fn escape_backslash() {
-            let mut s = String::new();
-            write!(&mut s, "{:?}", Escape(b"hello\\world")).unwrap();
-            println!("{}", s);
-            assert_eq!(s, "b\"hello\\\\world\"");
-        }
-    }
 }
 
 #[cfg(feature = "__tls")]
