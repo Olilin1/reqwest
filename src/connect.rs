@@ -173,13 +173,13 @@ impl Connector {
         self.verbose.0 = enabled;
     }
 
-    //#[cfg(feature = "socks")]
+    #[cfg(feature = "socks")]
     async fn connect_socks(&self, dst: Uri, proxy: ProxyScheme) -> Result<Conn, BoxError> {
         eprintln!("[connect_socks] BRANCH 1");
         let dns = match proxy {
             ProxyScheme::Socks5 {
                 remote_dns: false, ..
-            } => {eprintln!("[connect_socks] BRANCH 2"); return socks::DnsResolve::Local},
+            } => socks::DnsResolve::Local,
             ProxyScheme::Socks5 {
                 remote_dns: true, ..
             } => socks::DnsResolve::Proxy,
